@@ -52,6 +52,7 @@ scripts/run_cli.py  or  dashboard/  or  api/ → worker.py
 | File | What it does |
 |---|---|
 | `config.py` | Reads `.env` into one typed `Settings` object (`get_settings()`), and loads `config/services.yaml` (`load_profile()`). Every other file gets settings from here. |
+| `auth.py` | Dashboard login: reads `id:password` pairs from `DASHBOARD_USERS` and checks them safely. |
 | `logging.py` | One logging setup: readable console lines plus `logs/agent.log`. Quiets noisy libraries. |
 
 ## `app/services/`: talking to the outside world
@@ -126,7 +127,7 @@ An ARQ worker (`uv run arq app.worker.WorkerSettings`). It picks up runs queued 
 ## `dashboard/`
 | File | What it does |
 |---|---|
-| `streamlit_app.py` | Three pages: **Find leads** (form → live progress → results), **Leads** (filters, table, detail with copy-message button, status/notes, Excel download), **Runs** (history + per-run download). It has a demo-mode toggle. (Not called `app.py` because that would clash with the `app` package.) |
+| `streamlit_app.py` | **Login screen first** (users from `DASHBOARD_USERS`), then three pages: **Find leads** (form → live progress → results), **Leads** (filters, table, detail with copy-message button, status/notes, Excel download), **Runs** (history + per-run download). It has a demo-mode toggle. (Not called `app.py` because that would clash with the `app` package.) |
 
 ## `scripts/`: terminal commands
 | File | What it does |
@@ -145,7 +146,8 @@ An ARQ worker (`uv run arq app.worker.WorkerSettings`). It picks up runs queued 
 | `test_utils.py` | URL normalising, dedupe keys, profile inference, email finder, date filter |
 | `test_agent.py` | Full agent runs: qualified leads + export, **no duplicates across runs**, low-fit hidden, credit cap, LLM failure handling, category filter |
 | `test_api.py` | Auth, start run → worker → results, filters, PATCH, Excel, SSE, 404s, rate limits |
-| `test_dashboard.py` | Clicks through the dashboard headlessly in demo mode |
+| `test_auth.py` | Login parsing/checking, Postgres URL handling |
+| `test_dashboard.py` | Login required, wrong password rejected, then clicks through the dashboard headlessly in demo mode |
 
 ## `docs/`
 `LIBRARIES.md` (every library and where it's used), `FOLDERS.md` (this file), `graph.md` (agent diagram, regenerate with `run_cli.py --show-graph`).
@@ -157,6 +159,8 @@ An ARQ worker (`uv run arq app.worker.WorkerSettings`). It picks up runs queued 
 | `.env.example` → `.env` | Settings template → your real keys (`.env` is never committed) |
 | `.gitignore` / `.dockerignore` | What git / Docker should ignore (secrets, data, caches) |
 | `Dockerfile` | One image for API, worker and dashboard |
+| `render.yaml` | Render "Blueprint": how Render builds and runs the dashboard, and which secrets it asks for |
+| `deploy/start-dashboard.sh` | Starts the dashboard on the port the host gives (`$PORT`) |
 | `docker-compose.yml` | Starts Redis + API + worker + dashboard together |
 | `README.md` | Project overview, setup in 5 steps, usage, costs, disclaimer |
 | `LICENSE` | MIT |

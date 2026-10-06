@@ -77,6 +77,12 @@ A key/value cache stored on disk (a SQLite file in `.cache/`) with expiry times.
 
 The FastAPI endpoints return these same models directly.
 
+### psycopg `3.3.3`
+The PostgreSQL driver. Only used when `DATABASE_URL` points to Postgres (e.g. a free Neon database for hosting). `app/db/session.py` → `normalize_db_url()` turns `postgresql://...` into the form SQLAlchemy needs.
+
+### certifi
+A bundle of trusted SSL certificates. `brightdata.py` passes it to the Bright Data SDK so HTTPS works on macOS Pythons that can't see the system certificates.
+
 ### openpyxl `3.1.5`
 Writes `.xlsx` Excel files with bold headers, wrapped text and frozen header rows. Used in `app/services/export.py` (by the CLI, dashboard and API exports).
 

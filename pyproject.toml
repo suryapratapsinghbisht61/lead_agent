@@ -16,6 +16,7 @@ dependencies = [
     "langchain-ollama==1.1.0",
     "langgraph==1.2.12",
     "openpyxl==3.1.5",
+    "psycopg[binary]==3.3.3",
     "pydantic-settings==2.15.0",
     "pyyaml==6.0.3",
     "redis[hiredis]==5.3.1",

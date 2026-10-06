@@ -8,19 +8,73 @@ keeps values between those re-runs. It calls the agent directly (no API needed).
 
 import asyncio
 import os
+import time
 
 import pandas as pd
 import streamlit as st
 
 from app.agent.schemas import ALL_CATEGORIES, ALL_PLATFORMS, RunParams
 from app.core import config
+from app.core.auth import check_login, parse_users
 from app.core.config import ROOT_DIR
 from app.db import session as db_session
 from app.db.models import OUTREACH_STATUSES
 
 st.set_page_config(page_title="Lead Agent", page_icon="🎯", layout="wide")
 
+
+# ------------------------------------------------------------------ login
+def login_gate() -> None:
+    """Stop the page here until the visitor logs in. st.session_state is per browser session,
+    so every new visit / refresh asks for the password again."""
+    if st.session_state.get("user"):
+        return
+    users = parse_users(config.get_settings().dashboard_users)
+    st.title("🔒 Lead Agent")
+    if not users:
+        st.error("No users configured. Set DASHBOARD_USERS (e.g. `myid:mypassword`) in .env or your host's "
+                 "environment settings, then restart the app.")
+        st.stop()
+    if st.session_state.get("failed_logins", 0) >= 5:
+        st.error("Too many wrong attempts. Close this tab and try again later.")
+        st.stop()
+    with st.form("login"):
+        user_id = st.text_input("ID")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Log in", type="primary")
+    if submitted:
+        if check_login(user_id, password, users):
+            st.session_state["user"] = user_id.strip()
+            st.session_state.pop("failed_logins", None)
+            st.rerun()
+        time.sleep(2)  # slows down password guessing
+        st.session_state["failed_logins"] = st.session_state.get("failed_logins", 0) + 1
+        st.error("Wrong ID or password.")
+    st.stop()
+
+
+login_gate()
+st.sidebar.write(f"Logged in as **{st.session_state['user']}**")
+if st.sidebar.button("Log out"):
+    st.session_state.clear()
+    st.rerun()
+
+
 # ------------------------------------------------------------------ demo mode switch
+@st.cache_resource  # runs once per server process: remember the real settings before any demo switch
+def original_env() -> dict:
+    return {k: os.environ.get(k) for k in ("DATABASE_URL", "EXPORT_DIR")}
+
+
+def restore_env(values: dict) -> None:
+    for k, v in values.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+
+
+original_env()
 demo = st.sidebar.toggle("Demo mode (fake data, no API keys)", value=st.session_state.get("demo", False),
                          help="Uses a fake LLM and fake search results, stored in data/demo.db.")
 if demo != st.session_state.get("demo_applied"):
@@ -28,8 +82,7 @@ if demo != st.session_state.get("demo_applied"):
         os.environ["DATABASE_URL"] = f"sqlite:///{ROOT_DIR / 'data' / 'demo.db'}"
         os.environ["EXPORT_DIR"] = str(ROOT_DIR / "exports" / "demo")
     else:
-        os.environ.pop("DATABASE_URL", None)
-        os.environ.pop("EXPORT_DIR", None)
+        restore_env(original_env())
     config.get_settings.cache_clear()
     db_session.get_engine.cache_clear()
     st.session_state["demo"] = st.session_state["demo_applied"] = demo

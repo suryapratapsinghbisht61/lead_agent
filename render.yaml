@@ -1,0 +1,32 @@
+# Render "Blueprint": tells Render how to build and run this app.
+# Render dashboard -> New -> Blueprint -> pick this repo. It will ask for the secret values below.
+services:
+  - type: web
+    name: lead-agent
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh deploy/start-dashboard.sh
+    healthCheckPath: /_stcore/health
+    autoDeploy: true # redeploy on every push to GitHub
+    envVars:
+      # ---- secrets: Render asks you to type these in (never put them in this file) ----
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: BRIGHTDATA_API_TOKEN
+        sync: false
+      - key: DASHBOARD_USERS # id:password,id2:password2
+        sync: false
+      - key: DATABASE_URL # optional but recommended: a free Neon Postgres URL (leave empty = temporary SQLite)
+        sync: false
+      # ---- normal settings ----
+      - key: LLM_PROVIDER
+        value: google_genai
+      - key: LLM_MODEL
+        value: gemini-3.5-flash-lite
+      - key: LLM_FALLBACK_MODELS
+        value: gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.5-flash
+      - key: MAX_CREDITS_PER_RUN
+        value: "60"
+      - key: LOG_LEVEL
+        value: INFO

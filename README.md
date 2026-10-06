@@ -96,6 +96,25 @@ curl -o leads.xlsx localhost:8000/leads/export.xlsx -H "X-API-Key: $KEY"
 
 Requests need an `X-API-Key` header. Keys are stored hashed. The API is rate-limited per key (`RATE_LIMIT_PER_MINUTE`, `RUNS_PER_HOUR`).
 
+## Dashboard login
+
+The dashboard always asks for an ID and password: every new visit, refresh or tab. Users come from the `DASHBOARD_USERS` setting (in `.env` locally, or your host's environment settings), **never from the code**:
+
+```
+DASHBOARD_USERS=myid:MyPassword,mom:AnotherPassword
+```
+
+Add a person = add `,id:password`. Remove = delete it. No commas inside passwords.
+
+## Deploy on Render (free)
+
+1. *(Recommended)* Create a free Postgres at [neon.tech](https://neon.tech) and copy its connection string. Without it, leads live in a temporary SQLite file that Render wipes on every restart or sleep.
+2. On [render.com](https://render.com), sign in with GitHub → **New → Blueprint** → pick this repo. Render reads [`render.yaml`](render.yaml).
+3. Fill in the secrets it asks for: `GOOGLE_API_KEY`, `BRIGHTDATA_API_TOKEN`, `DASHBOARD_USERS`, `DATABASE_URL` (Neon string, or empty).
+4. **Apply**. After the build (~5–10 min) your link is at the top of the service page, e.g. `https://lead-agent-xxxx.onrender.com`.
+
+To change users or keys later: service → **Environment** → edit → **Save** (Render restarts the app automatically). Free services sleep after ~15 min idle; the next visit takes ~30–60 s to wake.
+
 ## Customise it for your business
 
 Everything about *you* lives in [`config/services.yaml`](config/services.yaml). No code changes are needed:
@@ -127,7 +146,7 @@ Set two lines in `.env`:
 ## Development
 
 ```bash
-uv run pytest            # 29 tests, fully offline (fake LLM, fake Bright Data, fake Redis)
+uv run pytest            # 34 tests, fully offline (fake LLM, fake Bright Data, fake Redis)
 uv run python scripts/run_cli.py --show-graph   # regenerate docs/graph.md
 ```
 

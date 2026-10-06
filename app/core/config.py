@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import yaml
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Project root = two folders up from this file (app/core/config.py -> project/)
@@ -48,11 +49,21 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     demo_mode: bool = False  # true = fake LLM + fake search results everywhere (try it without API keys)
 
+    # --- Dashboard login: "id:password,id2:password2" (keep it out of the code; repo is public) ---
+    dashboard_users: str = ""
+
     # --- Web app stage (API + worker) ---
     redis_url: str = "redis://localhost:6379/0"
     rate_limit_per_minute: int = 60  # API requests per key per minute
     runs_per_hour: int = 10  # POST /runs per key per hour (each run costs credits)
     cors_origins: str = "http://localhost:3000,http://localhost:5173"  # comma-separated
+
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _default_if_empty(cls, v):
+        """An empty DATABASE_URL (e.g. left blank on Render) means 'use the local SQLite file'."""
+        return v or f"sqlite:///{ROOT_DIR / 'data' / 'leads.db'}"
 
 
 @lru_cache  # build Settings once, reuse everywhere

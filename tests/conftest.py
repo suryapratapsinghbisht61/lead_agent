@@ -9,6 +9,8 @@ from app.services import cache, llm
 
 @pytest.fixture(autouse=True)
 def isolated_env(tmp_path, monkeypatch):
+    # Never read the developer's real .env (keys, users) in tests.
+    monkeypatch.setitem(config.Settings.model_config, "env_file", None)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
     monkeypatch.setenv("CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setenv("EXPORT_DIR", str(tmp_path / "exports"))
