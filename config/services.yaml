@@ -1,0 +1,53 @@
+# Who you are, what you sell, and who you want as customers.
+# The agent reads this file to plan searches, score fit and write messages.
+# Forking this repo? Edit this file to describe YOUR business. No code changes needed.
+
+me:
+  name: "Surya"                         # used to sign outreach messages
+  pitch: "I build custom AI agents and automations that remove repetitive manual work."
+  portfolio_url: ""                     # optional, e.g. https://yoursite.com (leave empty to omit)
+
+services:
+  - name: "Custom AI agents"
+    description: "Agents that handle a whole task end to end, e.g. replying to tier-1 support tickets, qualifying inbound leads, triaging email."
+  - name: "Workflow automation"
+    description: "Connecting tools (CRM, spreadsheets, email, Slack, Shopify, etc.) so data moves without copy-paste: data entry, reporting, invoicing, order ops."
+  - name: "End-to-end AI systems"
+    description: "Full systems built around a business process: document processing, internal knowledge assistants, AI-powered dashboards."
+
+# Signals that someone has a problem you can solve. Used to build search queries.
+pain_signals:
+  - "spending hours on data entry"
+  - "drowning in support tickets"
+  - "anyone know a tool to automate"
+  - "so much manual work"
+  - "copy pasting between spreadsheets"
+  - "need help automating"
+  - "hiring a virtual assistant for admin"
+  - "no bandwidth"
+
+# Job titles that suggest repetitive work worth automating.
+hiring_signals:
+  - "data entry"
+  - "customer support representative"
+  - "operations assistant"
+  - "admin assistant"
+  - "virtual assistant"
+
+# Where to look on Reddit.
+subreddits:
+  - smallbusiness
+  - startups
+  - Entrepreneur
+  - ecommerce
+  - SaaS
+  - agency
+
+# Who you prefer. Scoring adds a small bonus for these.
+target:
+  preferred_categories: [startup, company]   # startup | company | individual
+  boosted_niches:
+    - "agencies and service businesses (marketing, design, dev, recruiting, accounting)"
+  avoid:
+    - "people asking for free help only, students, or homework"
+    - "companies that sell automation/AI services themselves (competitors)"

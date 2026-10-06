@@ -1,0 +1,23 @@
+# Secrets — never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Local data produced by the agent
+.cache/
+data/*.db
+exports/*
+logs/
+!exports/.gitkeep
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Personal Claude Code settings
+.claude/settings.local.json

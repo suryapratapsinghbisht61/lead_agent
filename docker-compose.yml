@@ -1,0 +1,52 @@
+# Everything in one command:   docker compose up --build
+#   API + docs   http://localhost:8000/docs
+#   Dashboard    http://localhost:8501
+#
+# Settings come from .env. Data (SQLite DB, Excel exports, logs) is kept in ./data, ./exports, ./logs.
+
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    REDIS_URL: redis://redis:6379/0
+    DATABASE_URL: sqlite:////app/data/leads.db
+    # Ollama runs on your Mac, not in Docker; this is how a container reaches it.
+    OLLAMA_BASE_URL: http://host.docker.internal:11434
+  volumes:
+    - ./data:/app/data
+    - ./exports:/app/exports
+    - ./logs:/app/logs
+    - ./config:/app/config # edit services.yaml without rebuilding
+    - cache:/app/.cache # Bright Data cache shared by all services
+  depends_on:
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  api:
+    <<: *app
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *app
+    command: arq app.worker.WorkerSettings
+
+  dashboard:
+    <<: *app
+    command: streamlit run dashboard/streamlit_app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
+    ports: ["8501:8501"]
+
+volumes:
+  redis-data:
+  cache:
