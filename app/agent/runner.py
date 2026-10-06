@@ -112,3 +112,11 @@ async def run_agent(
         repo.update_run(run_id, status="failed", finished_at=utcnow(), progress=f"Failed: {e}",
                         errors=[str(e)], qualified_count=qualified, processed_count=len(final.get("processed", [])))
         raise
+    except BaseException:
+        # Cancelled, Ctrl+C, or Streamlit stopping the script (page closed/refreshed): not an
+        # Exception, so without this the run would stay "running" forever.
+        log.warning("Run %s interrupted", run_id)
+        repo.update_run(run_id, status="failed", finished_at=utcnow(),
+                        progress="Interrupted: the run was stopped before it finished",
+                        errors=["interrupted"], processed_count=len(final.get("processed", [])))
+        raise

@@ -20,7 +20,21 @@ from app.core.config import ROOT_DIR
 from app.db import session as db_session
 from app.db.models import OUTREACH_STATUSES
 
-st.set_page_config(page_title="Lead Agent", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Lead Agent", layout="wide")
+
+# Replace Streamlit's animated "running" figure (top-right) with a plain circular spinner.
+st.markdown("""
+<style>
+[data-testid="stStatusWidget"] { visibility: hidden; }
+.stApp:has([data-testid="stStatusWidgetRunningIcon"], [data-testid="stStatusWidgetRunningManIcon"])::after {
+    content: ""; position: fixed; top: 50%; left: 50%; z-index: 1000;
+    width: 40px; height: 40px; margin: -20px 0 0 -20px;
+    border: 4px solid rgba(128, 128, 128, 0.25); border-top-color: #ff4b4b; border-radius: 50%;
+    animation: lead-agent-spin 0.8s linear infinite;
+}
+@keyframes lead-agent-spin { to { transform: rotate(360deg); } }
+</style>
+""", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------------ login
@@ -30,7 +44,7 @@ def login_gate() -> None:
     if st.session_state.get("user"):
         return
     users = parse_users(config.get_settings().dashboard_users)
-    st.title("🔒 Lead Agent")
+    st.title("Lead Agent")
     if not users:
         st.error("No users configured. Set DASHBOARD_USERS (e.g. `myid:mypassword`) in .env or your host's "
                  "environment settings, then restart the app.")
@@ -185,7 +199,7 @@ def lead_detail(lead_id: int) -> None:
 
 # ------------------------------------------------------------------ pages
 if page == "Find leads":
-    st.title("🎯 Find leads")
+    st.title("Find leads")
     with st.form("run"):
         c1, c2, c3 = st.columns(3)
         count = c1.number_input("How many qualified leads", 1, 50, 10)
@@ -229,7 +243,7 @@ if page == "Find leads":
                 lead_detail(leads[event.selection.rows[0]].id)
 
 elif page == "Leads":
-    st.title("📋 All leads")
+    st.title("All leads")
     f1, f2, f3, f4 = st.columns(4)
     cats = f1.multiselect("Category", ALL_CATEGORIES)
     plats = f2.multiselect("Platform", ALL_PLATFORMS)
@@ -245,7 +259,7 @@ elif page == "Leads":
     if leads:
         st.download_button("Download Excel", leads_to_xlsx(leads), "leads.xlsx",
                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        tab_sheet, tab_detail = st.tabs(["📊 Excel view (all columns)", "🔍 Lead details + copy message"])
+        tab_sheet, tab_detail = st.tabs(["Excel view (all columns)", "Lead details + copy message"])
         with tab_sheet:
             st.dataframe(excel_view(leads), hide_index=True, column_config=LINK_COLUMNS, height=600)
         with tab_detail:
@@ -259,13 +273,13 @@ elif page == "Leads":
         st.info("No leads yet. Go to **Find leads** to run the agent.")
 
 else:
-    st.title("🕑 Run history")
+    st.title("Run history")
+    repo.fail_stale_runs()
     runs = repo.list_runs(100)
     if not runs:
         st.info("No runs yet.")
     for r in runs:
-        icon = {"completed": "✅", "failed": "❌", "running": "⏳", "queued": "🕐"}.get(r.status, "")
-        with st.expander(f"{icon} {r.created_at:%Y-%m-%d %H:%M} · {r.qualified_count} qualified · "
+        with st.expander(f"{r.status.capitalize()} · {r.created_at:%Y-%m-%d %H:%M} · {r.qualified_count} qualified · "
                          f"{r.credits_used} credits · {r.id}"):
             st.json(r.params)
             st.write(f"**Status:** {r.status} · **Stop reason:** {r.stop_reason or r.progress}")

@@ -2,6 +2,7 @@
 
 import hashlib
 import secrets
+from datetime import timedelta
 
 from sqlmodel import col, func, select
 
@@ -28,6 +29,25 @@ def update_run(run_id: str, **fields) -> None:
             setattr(run, k, v)
         s.add(run)
         s.commit()
+
+
+def fail_stale_runs(max_hours: float = 1.0) -> int:
+    """Mark runs stuck in "running" for longer than max_hours as failed.
+
+    A run whose process was killed (server restart, out of memory) never gets to
+    record its outcome, so it would show as running forever.
+    """
+    cutoff = utcnow() - timedelta(hours=max_hours)
+    with get_session() as s:
+        stale = list(s.exec(select(Run).where(Run.status == "running", col(Run.started_at) < cutoff)))
+        for run in stale:
+            run.status = "failed"
+            run.finished_at = utcnow()
+            run.progress = f"Interrupted: the app stopped during the run (last step: {run.progress})"
+            run.errors = [*(run.errors or []), "interrupted"]
+            s.add(run)
+        s.commit()
+        return len(stale)
 
 
 def get_run(run_id: str) -> Run | None:
